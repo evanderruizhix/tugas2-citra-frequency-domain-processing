@@ -1,0 +1,104 @@
+%File eksplorasi pemahaman
+clear; close all; clc;
+%% ===== Parameter =====
+namaFile = 'cameraman.tif';  
+jenis    = 'gaussian';       % 'ideal' | 'gaussian' | 'butterworth'
+D0       = 10;              
+
+%% ===== Baca citra =====
+f = imread(namaFile);
+if size(f,3) == 3
+    f = rgb2gray(f);
+end
+f = im2double(f);
+[M,N] = size(f);
+
+%% ===== Percobaan 1: citra asli =====
+bandingkan(f, D0, jenis, 'Percobaan 1 - citra asli');
+
+%% ===== Percobaan 2: ramp (gradasi gelap -> terang) =====
+ramp = repmat(linspace(0,1,N), M, 1);
+bandingkan(ramp, D0, jenis, 'Percobaan 2 - ramp');
+
+
+%% =====================================================================
+function g = lpf_freq(f, D0, jenis, pakaiPad)
+    [M,N] = size(f);
+    if pakaiPad
+        P = 2*M;  Q = 2*N;
+    else
+        P = M;    Q = N;
+    end
+
+    fp = zeros(P,Q);
+    fp(1:M,1:N) = f;
+
+    F = fftshift(fft2(fp));
+
+    u = (0:P-1) - floor(P/2);
+    v = (0:Q-1) - floor(Q/2);
+    [V,U] = meshgrid(v,u);
+
+    D = sqrt((U*M/P).^2 + (V*N/Q).^2);
+
+    switch jenis
+        case 'ideal'
+            H = double(D <= D0);
+        case 'gaussian'
+            H = exp(-(D.^2)/(2*D0^2));
+        case 'butterworth'
+            n = 2;
+            H = 1 ./ (1 + (D./D0).^(2*n));
+        otherwise
+            error('jenis harus ideal, gaussian, atau butterworth');
+    end
+
+    G = H .* F;
+    g = real(ifft2(ifftshift(G)));
+    g = g(1:M,1:N);
+end
+
+function bandingkan(f, D0, jenis, judul)
+    [M,N] = size(f);
+
+    g_pad   = lpf_freq(f, D0, jenis, true);
+    g_nopad = lpf_freq(f, D0, jenis, false);
+    selisih = abs(g_pad - g_nopad);
+
+    sigma = N/(2*pi*D0);
+    b = min(ceil(3*sigma), floor(min(M,N)/2) - 1);
+
+    dalam     = selisih(b+1:M-b, b+1:N-b);
+    nTepi     = numel(selisih) - numel(dalam);
+    rataTepi  = (sum(selisih(:)) - sum(dalam(:))) / nTepi;
+    rataDalam = mean(dalam(:));
+
+    fprintf('\n=== %s (%s, D0 = %g) ===\n', judul, jenis, D0);
+    fprintf('Lebar zona tepi (3*sigma)   : %d piksel\n', b);
+    fprintf('Selisih rata-rata di tepi   : %.4f\n', rataTepi);
+    fprintf('Selisih rata-rata di dalam  : %.6f\n', rataDalam);
+    fprintf('Selisih maksimum            : %.4f\n', max(selisih(:)));
+
+    figure('Name', judul, 'NumberTitle', 'off', 'Position', [80 80 1250 680]);
+
+    subplot(2,3,1); imshow(f, [0 1]);        title('Citra asli');
+    subplot(2,3,2); imshow(g_pad, [0 1]);    title('DENGAN padding (2M x 2N)');
+    subplot(2,3,3); imshow(g_nopad, [0 1]);  title('TANPA padding (M x N)');
+
+    subplot(2,3,4);
+    imshow(selisih, [0 max(selisih(:))]); colorbar;
+    title('|dengan - tanpa padding|');
+
+    r = round(M/2);
+    subplot(2,3,5);
+    plot(1:N, f(r,:), ':', 1:N, g_pad(r,:), 'b-', 1:N, g_nopad(r,:), 'r--', ...
+         'LineWidth', 1.2);
+    legend('asli', 'dengan padding', 'tanpa padding', 'Location', 'best');
+    xlabel('kolom'); ylabel('intensitas'); grid on; xlim([1 N]);
+    title(sprintf('Profil baris ke-%d', r));
+
+    subplot(2,3,6);
+    plot(1:N, mean(selisih,1), 'g', 'LineWidth', 1.2);
+    xlabel('kolom'); ylabel('selisih rata-rata'); grid on; xlim([1 N]);
+    title('Selisih per kolom (menumpuk di tepi)');
+end
