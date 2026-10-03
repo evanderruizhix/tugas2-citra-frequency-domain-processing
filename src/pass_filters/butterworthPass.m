@@ -1,7 +1,5 @@
 function H = butterworthPass(sizeImg, u0, v0, n, diameter, isLowPass)
-% berpusat di titik (u0, v0) relatif terhadap tengah spektrum.
-%
-% H = butterworthPass(sizeImg, u0, v0, n, diameter, isLowPass)
+% filter berpusat di titik (u0, v0) relatif terhadap tengah spektrum.
 %
 % OUTPUT:
 % H - filter 2D (nilai 0..1), ukuran sizeImg
