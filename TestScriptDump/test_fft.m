@@ -4,5 +4,5 @@ abs(F)
 abs(fftshift(F))  
 
 %konvolusi 1D
-real(ifft(fft([1 2 3 4]) .* fft([1 1], 4)))          % [5 3 5 7]
-real(ifft(fft([1 2 3 4 0 0 0 0]) .* fft([1 1], 8)))  % [1 3 5 7 4 0 0 0]
+real(ifft(fft([1 2 3 4]) .* fft([1 1 1], 4)))          % [5 3 5 7]
+real(ifft(fft([1 2 3 4 0 0 0 0]) .* fft([1 1], 8)))  % [1 3 5 7 4 0 0 0

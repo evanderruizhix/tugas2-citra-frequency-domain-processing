@@ -6,6 +6,7 @@ LEN = 15;
 % K = ones(1, LEN) / LEN;
 K = eye(LEN) / LEN;
 
+
 disp('Kernel PSF:');
 disp(K);
 fprintf('Jumlah isi kernel = %.2f\n', sum(K(:)));
