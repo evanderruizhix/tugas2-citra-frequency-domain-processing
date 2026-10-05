@@ -25,13 +25,20 @@ for i = 1:numel(filterList)
         case 'butterworth'
             Hk = butterworthPass(sizeImg, u0, v0, spec.n, spec.diameter, spec.isLowPass);
 
+        % TODO
         case 'ideal'
             error('buildFilter:notImplemented', ...
                 ['ILPF/IHPF belum diimplementasikan.']);
 
+        % TODO
         case 'gaussian'
             error('buildFilter:notImplemented', ...
                 ['GLPF/GHPF belum diimplementasikan.']);
+
+        % TODO: buat filter notch reject pass (horizon/vertical line)
+        % case....
+        % karena ada notch pass, jangan lupa implemen pengurangan antar
+        % image
 
         otherwise
             error('buildFilter:unknownType', ...

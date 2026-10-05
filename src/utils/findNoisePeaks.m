@@ -13,7 +13,7 @@ function peaks = findNoisePeaks(img, varargin)
     
     % list parameter name
     p = inputParser;
-    addParameter(p, 'ExcludeRadius', 20); 
+    addParameter(p, 'ExcludeRadius', 20);
     addParameter(p, 'MinDistance', 16);
     addParameter(p, 'MaxPeaks', 10);
     addParameter(p, 'ThresholdStd', 3);
@@ -105,6 +105,7 @@ function peaks = findNoisePeaks(img, varargin)
     end
 
     % visualisasi
+    % TODO: dipindahin ke GUI
     if opt.Visualize
         figure('Name', 'Deteksi Noise Peaks');
         imagesc(mag); colormap(gray); axis image; hold on;

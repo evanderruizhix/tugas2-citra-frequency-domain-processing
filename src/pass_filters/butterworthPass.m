@@ -16,6 +16,7 @@ cols = sizeImg(2);
 centerRow = floor(rows/2) + 1;
 centerCol = floor(cols/2) + 1;
 
+% cari aman kalau lupa padding
 [X, Y] = meshgrid(1:cols, 1:rows);
 U = X - centerCol;
 V = Y - centerRow;
