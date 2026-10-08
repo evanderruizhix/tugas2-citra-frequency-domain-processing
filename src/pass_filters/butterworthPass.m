@@ -4,12 +4,8 @@ function H = butterworthPass(sizeImg, u0, v0, n, diameter, isLowPass)
 % OUTPUT:
 % H - filter 2D (nilai 0..1), ukuran sizeImg
 
-if isempty(u0)
-    u0 = 0;
-end
-if isempty(v0)
-    v0 = 0;
-end
+if isempty(u0), u0 = 0; end
+if isempty(v0), v0 = 0; end
 
 [U, V] = freqGrid(sizeImg);
 

@@ -48,18 +48,22 @@ for i = 1:numel(filterList)
             error('buildFilter:notImplemented', ...
                 ['ILPF/IHPF belum diimplementasikan.']);
 
-        % TODO
         case 'gaussian'
             error('buildFilter:notImplemented', ...
                 ['GLPF/GHPF belum diimplementasikan.']);
 
-        % TODO: buat filter bandfilter (ideal, gauss, butterworth) ini
-        % terserah mau dipisah per file, atau sbgi parameter dalam 1 fungsi
-        % bandpass/reject
-        
         case 'band_ideal'
             error('buildFilter:notImplemented', ...
                 ['bandreject/bandpass ideal belum diimplementasikan.']);
+
+        case 'band_gaussian'
+            error('buildFilter:notImplemented', ...
+                ['bandreject/bandpass gaussian belum diimplementasikan.']);
+
+        case 'band_butterworth'
+            error('buildFilter:notImplemented', ...
+                ['bandreject/bandpass butterworth belum diimplementasikan.']);
+
 
         case 'notchline'
                 breakPos    = getFieldOrDefault(spec, 'breakPos', []);
