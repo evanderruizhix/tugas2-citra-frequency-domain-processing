@@ -1,4 +1,4 @@
-function imgResult = subtractNotchPattern(imgOriginal, imgPadded, Hpass, origSize, weight)
+function [imgResult, noisePattern] = subtractNotchPattern(imgOriginal, imgPadded, Hpass, origSize, weight)
 % implementasi "optimum notch filtering" dipakai  ketika filter yang dibangun buildFilter.m berupa notch PASS (isPass=true)
 %
 % INPUT:
@@ -10,22 +10,26 @@ function imgResult = subtractNotchPattern(imgOriginal, imgPadded, Hpass, origSiz
 %                 dikurangkan.
 %
 % OUTPUT:
-%   imgResult - citra hasil (uint8), ukuran origSize
+%   imgResult       - citra hasil (uint8), ukuran origSize
+%   noisePattern    - citra pengurang (noise dari notch pass filter)
 
 
 if nargin < 5
     weight = 1;
 end
 
+
 F = fft2(double(imgPadded));
 F = fftshift(F);
 Fnoise = F .* Hpass;
 
-noisePattern = ifft2(ifftshift(Fnoise));
-noisePattern = real(noisePattern);
-noisePattern = noisePattern(1:origSize(1), 1:origSize(2));  % crop balik
+rawNoisePattern = ifft2(ifftshift(Fnoise));
+rawNoisePattern = real(rawNoisePattern);
+rawNoisePattern = rawNoisePattern(1:origSize(1), 1:origSize(2));  % crop balik
 
-imgResult = double(imgOriginal) - weight * noisePattern;
+noisePattern = weight * rawNoisePattern;   
+
+imgResult = double(imgOriginal) - noisePattern;
 
 imgResult = max(0, min(255, imgResult));
 imgResult = uint8(imgResult);

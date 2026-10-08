@@ -17,7 +17,6 @@ function peaks = findNoisePeaks(img, varargin)
     addParameter(p, 'MinDistance', 16);
     addParameter(p, 'MaxPeaks', 10);
     addParameter(p, 'ThresholdStd', 3);
-    addParameter(p, 'Visualize', false);
     parse(p, varargin{:});
     opt = p.Results;
 
@@ -102,16 +101,5 @@ function peaks = findNoisePeaks(img, varargin)
         peaks(i).v = selectedRows(i) - centerRow;   % posisi vertikal relatif
         peaks(i).distance = sqrt(peaks(i).u^2 + peaks(i).v^2);
         peaks(i).magnitude = selectedVals(i);
-    end
-
-    % visualisasi
-    % TODO: dipindahin ke GUI
-    if opt.Visualize
-        figure('Name', 'Deteksi Noise Peaks');
-        imagesc(mag); colormap(gray); axis image; hold on;
-        plot(selectedCols, selectedRows, 'ro', 'MarkerSize', 10, 'LineWidth', 1.5);
-        plot(centerCol, centerRow, 'g+', 'MarkerSize', 12, 'LineWidth', 1.5);
-        title(sprintf('%d noise peak terdeteksi (hijau = pusat/DC)', n));
-        hold off;
-    end
+    end;
 end

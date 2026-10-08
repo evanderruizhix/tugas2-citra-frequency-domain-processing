@@ -80,7 +80,7 @@ imgResult2 = real(imgResult2);
 imgResult2 = imgResult2(1:origSize2(1), 1:origSize2(2));
 imgResult2 = uint8(imgResult2);
 
-imResMinPass = substractNotchPattern(img2, img2Padded, H_denoise, origSize2, 1);
+[imResMinPass, noisePattern] = substractNotchPattern(img2, img2Padded, H_denoise, origSize2);
 
 figure('Name', 'Notch Line Horizontal - Sebelum vs Sesudah');
 
@@ -96,6 +96,8 @@ subplot(2, 3, 3);
 imagesc(log(abs(Fcleaned2)+1)); colormap(gray); axis image;
 title('Masked Fourier');
 
+noisePatternDisplay = uint8(mat2gray(noisePattern) * 255);
+
 subplot(2, 3, 4); imshow(imResMinPass);
 subplot(2, 3, 5); imshow(img2); title('Sebelum');
-subplot(2, 3, 6); imshow(imgResult2); title('Sesudah notch line');
+subplot(2, 3, 6); imshow(noisePatternDisplay); title('Sesudah notch line');
