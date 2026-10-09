@@ -1,9 +1,24 @@
 function H = bandIdeal(sizeImg, u0, v0, diameter, width, isBandPass)
-% TODO
 % filter pita Ideal (band reject/pass), cincin radial berpusat di
 % (u0, v0)
 %
 % OUTPUT:
 % H - filter 2D (nilai 0..1), ukuran sizeImg
-H = 1
+
+if isempty(u0), u0 = 0; end
+if isempty(v0), v0 = 0; end
+
+[U, V] = freqGrid(sizeImg);
+
+D = sqrt((U - u0).^2 + (V - v0).^2);
+D0 = diameter / 2;
+W = width;
+
+bandpass = double(D >= (D0 - W/2) & D <= (D0 + W/2));
+
+if isBandPass
+    H = bandpass;
+else
+    H = 1 - bandpass; % Bandreject
+end
 end
