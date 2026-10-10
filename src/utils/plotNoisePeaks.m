@@ -40,6 +40,13 @@ if n > 0
     peakU = [peaks.u];
     peakV = [peaks.v];
     plot(ax, peakU, peakV, 'ro', 'MarkerSize', 10, 'LineWidth', 1.5);
+
+    % nomor urut di samping lingkaran, sama dengan kolom "No" di tabel peaks
+    for k = 1:n
+        text(ax, peakU(k), peakV(k), sprintf('  %d', k), ...
+            'Color', 'y', 'FontSize', 10, 'FontWeight', 'bold', ...
+            'VerticalAlignment', 'bottom');
+    end
 end
 
 plot(ax, 0, 0, 'g+', 'MarkerSize', 12, 'LineWidth', 1.5);   % pusat/DC

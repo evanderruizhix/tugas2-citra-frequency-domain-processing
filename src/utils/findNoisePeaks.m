@@ -1,4 +1,4 @@
-function peaks = findNoisePeaks(img, varargin)
+function [peaks, mag] = findNoisePeaks(img, varargin)
 % mendeteksi titik-titik noise periodik pada spektrum
 %
 % INPUT:
@@ -10,7 +10,9 @@ function peaks = findNoisePeaks(img, varargin)
 % .u, .v           : koordinat relatif terhadap pusat
 % .distance        : radius dari pusat
 % .magnitude       : nilai magnitude/log-scale di titik itu
-    
+% mag   - magnitude spectrum (log-scale, fftshift) yang dipakai deteksi,
+%         bisa langsung dikirim ke plotNoisePeaks.m
+
     % list parameter name
     p = inputParser;
     addParameter(p, 'ExcludeRadius', 20);
@@ -101,5 +103,5 @@ function peaks = findNoisePeaks(img, varargin)
         peaks(i).v = selectedRows(i) - centerRow;   % posisi vertikal relatif
         peaks(i).distance = sqrt(peaks(i).u^2 + peaks(i).v^2);
         peaks(i).magnitude = selectedVals(i);
-    end;
+    end
 end

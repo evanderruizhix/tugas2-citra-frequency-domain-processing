@@ -1,6 +1,7 @@
 %img = imread("02_citra_test_images/E_periodic_noise_restoration/input/brick_gray_periodic_noise.png");
 img = imread('02_citra_test_images/E_periodic_noise_restoration/input/hubble_color_periodic_noise.png');
 
+
 if size(img, 3) == 3
     img = rgb2gray(img);
 end
@@ -16,8 +17,7 @@ peaks = findNoisePeaks(imgPadded, ...
     'ExcludeRadius', 10 * padFactor, ...
     'MinDistance', 8 * padFactor, ...
     'ThresholdStd', 4, ...
-    'MaxPeaks', 6, ...
-    'Visualize', true);
+    'MaxPeaks', 6);
 
 % cek hasil print
 fprintf('Jumlah noise peak terdeteksi: %d\n\n', numel(peaks));

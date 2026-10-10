@@ -80,7 +80,7 @@ imgResult2 = real(imgResult2);
 imgResult2 = imgResult2(1:origSize2(1), 1:origSize2(2));
 imgResult2 = uint8(imgResult2);
 
-[imResMinPass, noisePattern] = substractNotchPattern(img2, img2Padded, H_denoise, origSize2);
+[imResMinPass, noisePattern] = subtractNotchPattern(img2, img2Padded, H_denoise, origSize2);
 
 figure('Name', 'Notch Line Horizontal - Sebelum vs Sesudah');
 
