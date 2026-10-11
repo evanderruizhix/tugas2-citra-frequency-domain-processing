@@ -35,6 +35,7 @@ classdef AppState < handle
 
         % panel lowpass / highpass
         PassShape = []; PassDiameter = []; PassOrder = [];
+        PassEpoch = []; PassTuneStatus = [];
 
         % panel brightness
         TargetMean = [];

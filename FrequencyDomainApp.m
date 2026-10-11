@@ -189,8 +189,8 @@ pnl = uipanel(app.ParamStack, 'Title', '', 'BorderType', 'line', ...
 pnl.Layout.Row = 1;
 app.Panels.pass = pnl;
 
-g = uigridlayout(pnl, [4 2]);
-g.RowHeight   = {26, 26, 26, '1x'};
+g = uigridlayout(pnl, [6 2]);
+g.RowHeight   = {26, 26, 26, 26, 32, '1x'};
 g.ColumnWidth = {110, '1x'};
 g.RowSpacing  = 8;
 g.ColumnSpacing = 6;
@@ -211,16 +211,40 @@ app.PassDiameter = uispinner(g, 'Value', 120, 'Limits', [1 Inf], 'Step', 5, ...
 app.PassDiameter.ValueChangedFcn = @(~, ~) refreshFilterPreview(app);
 
 uilabel(g, 'Text', 'Orde n');
-app.PassOrder = uispinner(g, 'Value', 2, 'Limits', [1 Inf], 'Step', 1, ...
-    'Tooltip', 'Orde Butterworth: makin besar makin tajam (mendekati ideal)');
+% batas input hanya dari rumus (n > 0); rentang 1..2.5 cuma dipakai Tune
+app.PassOrder = uispinner(g, 'Value', 2, 'Limits', [0 Inf], ...
+    'LowerLimitInclusive', 'off', 'Step', 0.1, ...
+    'Tooltip', 'Orde Butterworth (n > 0): makin besar makin tajam (mendekati ideal). Tune mencari di rentang 1 sampai 2.5.');
 app.PassOrder.ValueChangedFcn = @(~, ~) refreshFilterPreview(app);
+
+% --- tuning otomatis terhadap citra referensi --------------------------------
+uilabel(g, 'Text', 'Epoch tuning');
+tuneRow = uigridlayout(g, [1 2]);
+tuneRow.ColumnWidth = {'1x', 80};
+tuneRow.ColumnSpacing = 6;
+tuneRow.Padding = [0 0 0 0];
+tuneRow.BackgroundColor = [0.99 0.99 0.99];
+app.PassEpoch = uispinner(tuneRow, 'Value', 15, 'Limits', [3 60], 'Step', 1, ...
+    'RoundFractionalValues', 'on', ...
+    'Tooltip', 'Jumlah langkah penyempitan rentang per pencarian (makin banyak makin teliti)');
+uibutton(tuneRow, 'Text', 'Tune', ...
+    'FontWeight', 'bold', ...
+    'BackgroundColor', [0.95 0.85 0.55], ...
+    'Tooltip', ['Cari diameter (dan orde n untuk Butterworth) dengan PSNR terbaik ' ...
+                'terhadap citra referensi. Hasilnya diisi ke field di atas, belum diterapkan.'], ...
+    'ButtonPushedFcn', @(~, ~) onTunePass(app));
+
+app.PassTuneStatus = uilabel(g, 'Text', '', 'WordWrap', 'on', 'FontSize', 10, ...
+    'FontColor', [0.2 0.5 0.2], 'VerticalAlignment', 'top');
+app.PassTuneStatus.Layout.Row = 5;
+app.PassTuneStatus.Layout.Column = [1 2];
 
 hint = uilabel(g, 'Text', ['Filter berpusat di tengah spektrum. Diameter memakai ' ...
     'koordinat spektrum citra yang sudah di-pad 2x, sama dengan sumbu u,v di ' ...
     'tab Utama. Lihat bentuknya di tab Filter H.'], ...
     'WordWrap', 'on', 'FontSize', 10, 'FontColor', [0.3 0.3 0.3], ...
     'VerticalAlignment', 'top');
-hint.Layout.Row = 4;
+hint.Layout.Row = 6;
 hint.Layout.Column = [1 2];
 end
 
@@ -898,6 +922,7 @@ end
 app.InfoLabel.Text = info;
 app.InfoLabel.Tooltip = sprintf('%s (%s)', fileName, info);
 app.PeaksButton.Enable = 'on';
+app.PassTuneStatus.Text = '';       % hasil tune milik citra sebelumnya
 
 if ~isempty(app.PeakStatus) && isvalid(app.PeakStatus)
     app.PeakStatus.Text = 'Citra baru dimuat. Tekan Find untuk mendeteksi peaks.';
@@ -972,6 +997,62 @@ end
 function onPassFieldChanged(app)
 updatePassFields(app);
 refreshFilterPreview(app);
+end
+
+function onTunePass(app)
+% cari parameter lowpass/highpass terbaik terhadap referensi. Kandidat hanya
+% dihitung di belakang layar: hasil, langkah, dan riwayat undo tidak berubah.
+if isempty(app.Original)
+    uialert(app.Figure, 'Muat citra dulu sebelum tuning.', 'Citra belum dimuat');
+    return;
+end
+if isempty(app.Reference)
+    uialert(app.Figure, ['Tuning butuh citra referensi sebagai pembanding, ' ...
+        'dan citra ini tidak punya referensi.'], 'Tune', 'Icon', 'info');
+    return;
+end
+
+base   = workingImage(app);
+method = app.MethodBox.Value;
+shape  = app.PassShape.Value;
+
+dlg = uiprogressdlg(app.Figure, 'Title', 'Tune filter', ...
+    'Message', 'Menyiapkan...', 'Cancelable', 'on');
+try
+    [best, riwayat] = tunePassFilter(base, app.Reference, method, shape, ...
+        app.PassEpoch.Value, app.PassOrder.Value, ...
+        @(fraksi, pesan) updateTuneProgress(dlg, fraksi, pesan));
+catch ex
+    close(dlg);
+    uialert(app.Figure, sprintf('Tuning gagal:\n%s', ex.message), 'Tune');
+    return;
+end
+close(dlg);
+
+if best.dibatalkan
+    app.PassTuneStatus.Text = 'Tune dibatalkan, parameter tidak diubah.';
+    app.PassTuneStatus.FontColor = [0.7 0.1 0.1];
+    return;
+end
+
+% angka terbaik muncul di field filter; diterapkan lewat tombol Terapkan
+app.PassDiameter.Value = best.diameter;
+teks = sprintf('Tune: D = %d', best.diameter);
+if strcmp(shape, 'butterworth')
+    app.PassOrder.Value = best.n;
+    teks = sprintf('%s, n = %.2f', teks, best.n);
+end
+app.PassTuneStatus.Text = sprintf('%s, PSNR = %.2f dB (MSE %.2f), %d kandidat dicoba.', ...
+    teks, best.psnr, best.mse, size(riwayat, 1));
+app.PassTuneStatus.FontColor = [0.2 0.5 0.2];
+
+refreshFilterPreview(app);
+end
+
+function batal = updateTuneProgress(dlg, fraksi, pesan)
+dlg.Value   = fraksi;
+dlg.Message = pesan;
+batal = dlg.CancelRequested;
 end
 
 function updatePassFields(app)
