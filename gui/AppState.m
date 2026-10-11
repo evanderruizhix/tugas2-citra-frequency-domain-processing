@@ -47,6 +47,7 @@ classdef AppState < handle
         % panel motion blur
         MotionMethod = []; MotionL = []; MotionTheta = [];
         MotionParamLabel = []; MotionK = []; MotionThreshold = [];
+        MotionEpoch = []; MotionTuneStatus = [];
 
         % tombol aksi
         UndoButton = [];

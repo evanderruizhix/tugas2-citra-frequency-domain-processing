@@ -375,8 +375,8 @@ pnl = uipanel(app.ParamStack, 'Title', '', 'BorderType', 'line', ...
 pnl.Layout.Row = 4;
 app.Panels.motion = pnl;
 
-g = uigridlayout(pnl, [5 2]);
-g.RowHeight   = {26, 26, 26, 26, '1x'};
+g = uigridlayout(pnl, [7 2]);
+g.RowHeight   = {26, 26, 26, 26, 26, 32, '1x'};
 g.ColumnWidth = {110, '1x'};
 g.RowSpacing  = 8;
 g.ColumnSpacing = 6;
@@ -417,11 +417,34 @@ app.MotionThreshold = uieditfield(paramCell, 'numeric', 'Value', 0.01, ...
 app.MotionThreshold.Layout.Row = 1;
 app.MotionThreshold.Layout.Column = 1;
 
+% --- tuning otomatis terhadap citra referensi --------------------------------
+uilabel(g, 'Text', 'Epoch tuning');
+tuneRow = uigridlayout(g, [1 2]);
+tuneRow.ColumnWidth = {'1x', 80};
+tuneRow.ColumnSpacing = 6;
+tuneRow.Padding = [0 0 0 0];
+tuneRow.BackgroundColor = [0.99 0.99 0.99];
+app.MotionEpoch = uispinner(tuneRow, 'Value', 15, 'Limits', [3 60], 'Step', 1, ...
+    'RoundFractionalValues', 'on', ...
+    'Tooltip', 'Jumlah langkah penyempitan rentang (makin banyak makin teliti)');
+uibutton(tuneRow, 'Text', 'Tune', ...
+    'FontWeight', 'bold', ...
+    'BackgroundColor', [0.95 0.85 0.55], ...
+    'Tooltip', ['Cari K (Wiener) atau threshold (inverse) dengan PSNR terbaik terhadap ' ...
+                'citra referensi. L dan theta tidak diubah. Hasilnya diisi ke field di atas, ' ...
+                'belum diterapkan.'], ...
+    'ButtonPushedFcn', @(~, ~) onTuneMotion(app));
+
+app.MotionTuneStatus = uilabel(g, 'Text', '', 'WordWrap', 'on', 'FontSize', 10, ...
+    'FontColor', [0.2 0.5 0.2], 'VerticalAlignment', 'top');
+app.MotionTuneStatus.Layout.Row = 6;
+app.MotionTuneStatus.Layout.Column = [1 2];
+
 hint = uilabel(g, 'Text', ['PSF dibentuk dari L dan theta (motionBlurPSF.m) pada ukuran ' ...
     'citra asli, tanpa padding. |H| bisa dilihat di tab Filter H.'], ...
     'WordWrap', 'on', 'FontSize', 10, 'FontColor', [0.3 0.3 0.3], ...
     'VerticalAlignment', 'top');
-hint.Layout.Row = 5;
+hint.Layout.Row = 7;
 hint.Layout.Column = [1 2];
 end
 
@@ -946,6 +969,7 @@ app.InfoLabel.Tooltip = sprintf('%s (%s)', fileName, info);
 app.PeaksButton.Enable = 'on';
 app.PassTuneStatus.Text = '';       % hasil tune milik citra sebelumnya
 app.BrightTuneStatus.Text = '';
+app.MotionTuneStatus.Text = '';
 
 if ~isempty(app.PeakStatus) && isvalid(app.PeakStatus)
     app.PeakStatus.Text = 'Citra baru dimuat. Tekan Find untuk mendeteksi peaks.';
@@ -1109,6 +1133,53 @@ app.TargetMean.Value = best.targetMean;
 app.BrightTuneStatus.Text = sprintf(['Tune: target mean = %.4f, PSNR = %.2f dB ' ...
     '(MSE %.2f), %d kandidat dicoba.'], best.targetMean, best.psnr, best.mse, size(riwayat, 1));
 app.BrightTuneStatus.FontColor = [0.2 0.5 0.2];
+end
+
+function onTuneMotion(app)
+% cari K (Wiener) atau threshold (inverse) terbaik terhadap referensi; seperti
+% onTunePass, hasil dan riwayat undo tidak berubah
+if isempty(app.Original)
+    uialert(app.Figure, 'Muat citra dulu sebelum tuning.', 'Citra belum dimuat');
+    return;
+end
+if isempty(app.Reference)
+    uialert(app.Figure, ['Tuning butuh citra referensi sebagai pembanding, ' ...
+        'dan citra ini tidak punya referensi.'], 'Tune', 'Icon', 'info');
+    return;
+end
+
+restoration = app.MotionMethod.Value;
+
+dlg = uiprogressdlg(app.Figure, 'Title', 'Tune restorasi motion blur', ...
+    'Message', 'Menyiapkan...', 'Cancelable', 'on');
+try
+    [best, riwayat] = tuneMotionRestoration(workingImage(app), app.Reference, ...
+        restoration, app.MotionL.Value, app.MotionTheta.Value, app.MotionEpoch.Value, ...
+        @(fraksi, pesan) updateTuneProgress(dlg, fraksi, pesan));
+catch ex
+    close(dlg);
+    uialert(app.Figure, sprintf('Tuning gagal:\n%s', ex.message), 'Tune');
+    return;
+end
+close(dlg);
+
+if best.dibatalkan
+    app.MotionTuneStatus.Text = 'Tune dibatalkan, parameter tidak diubah.';
+    app.MotionTuneStatus.FontColor = [0.7 0.1 0.1];
+    return;
+end
+
+% angka terbaik muncul di field; diterapkan lewat tombol Terapkan
+if strcmp(restoration, 'wiener')
+    app.MotionK.Value = best.value;
+    nama = 'K';
+else
+    app.MotionThreshold.Value = best.value;
+    nama = 'threshold';
+end
+app.MotionTuneStatus.Text = sprintf('Tune: %s = %g, PSNR = %.2f dB (MSE %.2f), %d kandidat dicoba.', ...
+    nama, best.value, best.psnr, best.mse, size(riwayat, 1));
+app.MotionTuneStatus.FontColor = [0.2 0.5 0.2];
 end
 
 function batal = updateTuneProgress(dlg, fraksi, pesan)
