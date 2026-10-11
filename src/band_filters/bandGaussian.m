@@ -18,7 +18,7 @@ denom = D .* W;
 denom(denom == 0) = eps;
 
 % Rumus Gaussian Bandpass
-bandpass = exp(-(((D.^2 - D0^2) ./ denom).^2));
+bandpass = exp(-0.5 * (((D.^2 - D0^2) ./ denom).^2));
 
 if isBandPass
     H = bandpass;
