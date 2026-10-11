@@ -38,7 +38,7 @@ classdef AppState < handle
         PassEpoch = []; PassTuneStatus = [];
 
         % panel brightness
-        TargetMean = [];
+        TargetMean = []; BrightEpoch = []; BrightTuneStatus = [];
 
         % panel notch / band (filter builder)
         NotchMode = []; NotchWeight = []; NotchTypeBox = [];

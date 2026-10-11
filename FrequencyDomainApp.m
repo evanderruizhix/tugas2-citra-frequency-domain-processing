@@ -256,8 +256,8 @@ pnl = uipanel(app.ParamStack, 'Title', '', 'BorderType', 'line', ...
 pnl.Layout.Row = 2;
 app.Panels.brightness = pnl;
 
-g = uigridlayout(pnl, [2 2]);
-g.RowHeight   = {26, '1x'};
+g = uigridlayout(pnl, [4 2]);
+g.RowHeight   = {26, 26, 32, '1x'};
 g.ColumnWidth = {110, '1x'};
 g.RowSpacing  = 8;
 g.ColumnSpacing = 6;
@@ -268,11 +268,33 @@ uilabel(g, 'Text', 'Target mean');
 app.TargetMean = uispinner(g, 'Value', 0.48, 'Limits', [0.01 1], 'Step', 0.02, ...
     'Tooltip', 'Rata-rata kecerahan citra hasil, skala 0..1');
 
+% --- tuning otomatis terhadap citra referensi --------------------------------
+uilabel(g, 'Text', 'Epoch tuning');
+tuneRow = uigridlayout(g, [1 2]);
+tuneRow.ColumnWidth = {'1x', 80};
+tuneRow.ColumnSpacing = 6;
+tuneRow.Padding = [0 0 0 0];
+tuneRow.BackgroundColor = [0.99 0.99 0.99];
+app.BrightEpoch = uispinner(tuneRow, 'Value', 15, 'Limits', [3 60], 'Step', 1, ...
+    'RoundFractionalValues', 'on', ...
+    'Tooltip', 'Jumlah langkah penyempitan rentang (makin banyak makin teliti)');
+uibutton(tuneRow, 'Text', 'Tune', ...
+    'FontWeight', 'bold', ...
+    'BackgroundColor', [0.95 0.85 0.55], ...
+    'Tooltip', ['Cari target mean dengan PSNR terbaik terhadap citra referensi. ' ...
+                'Hasilnya diisi ke field di atas, belum diterapkan.'], ...
+    'ButtonPushedFcn', @(~, ~) onTuneBrightness(app));
+
+app.BrightTuneStatus = uilabel(g, 'Text', '', 'WordWrap', 'on', 'FontSize', 10, ...
+    'FontColor', [0.2 0.5 0.2], 'VerticalAlignment', 'top');
+app.BrightTuneStatus.Layout.Row = 3;
+app.BrightTuneStatus.Layout.Column = [1 2];
+
 hint = uilabel(g, 'Text', ['Seluruh spektrum dikali satu alpha = target mean / ' ...
     'rata-rata sekarang (dihitung dari komponen DC), jadi rasio R:G:B tidak berubah.'], ...
     'WordWrap', 'on', 'FontSize', 10, 'FontColor', [0.3 0.3 0.3], ...
     'VerticalAlignment', 'top');
-hint.Layout.Row = 2;
+hint.Layout.Row = 4;
 hint.Layout.Column = [1 2];
 end
 
@@ -923,6 +945,7 @@ app.InfoLabel.Text = info;
 app.InfoLabel.Tooltip = sprintf('%s (%s)', fileName, info);
 app.PeaksButton.Enable = 'on';
 app.PassTuneStatus.Text = '';       % hasil tune milik citra sebelumnya
+app.BrightTuneStatus.Text = '';
 
 if ~isempty(app.PeakStatus) && isvalid(app.PeakStatus)
     app.PeakStatus.Text = 'Citra baru dimuat. Tekan Find untuk mendeteksi peaks.';
@@ -1047,6 +1070,45 @@ app.PassTuneStatus.Text = sprintf('%s, PSNR = %.2f dB (MSE %.2f), %d kandidat di
 app.PassTuneStatus.FontColor = [0.2 0.5 0.2];
 
 refreshFilterPreview(app);
+end
+
+function onTuneBrightness(app)
+% cari target mean terbaik terhadap referensi; seperti onTunePass, hasil dan
+% riwayat undo tidak berubah
+if isempty(app.Original)
+    uialert(app.Figure, 'Muat citra dulu sebelum tuning.', 'Citra belum dimuat');
+    return;
+end
+if isempty(app.Reference)
+    uialert(app.Figure, ['Tuning butuh citra referensi sebagai pembanding, ' ...
+        'dan citra ini tidak punya referensi.'], 'Tune', 'Icon', 'info');
+    return;
+end
+
+dlg = uiprogressdlg(app.Figure, 'Title', 'Tune brightness', ...
+    'Message', 'Menyiapkan...', 'Cancelable', 'on');
+try
+    [best, riwayat] = tuneBrightness(workingImage(app), app.Reference, ...
+        app.BrightEpoch.Value, ...
+        @(fraksi, pesan) updateTuneProgress(dlg, fraksi, pesan));
+catch ex
+    close(dlg);
+    uialert(app.Figure, sprintf('Tuning gagal:\n%s', ex.message), 'Tune');
+    return;
+end
+close(dlg);
+
+if best.dibatalkan
+    app.BrightTuneStatus.Text = 'Tune dibatalkan, parameter tidak diubah.';
+    app.BrightTuneStatus.FontColor = [0.7 0.1 0.1];
+    return;
+end
+
+% angka terbaik muncul di field; diterapkan lewat tombol Terapkan
+app.TargetMean.Value = best.targetMean;
+app.BrightTuneStatus.Text = sprintf(['Tune: target mean = %.4f, PSNR = %.2f dB ' ...
+    '(MSE %.2f), %d kandidat dicoba.'], best.targetMean, best.psnr, best.mse, size(riwayat, 1));
+app.BrightTuneStatus.FontColor = [0.2 0.5 0.2];
 end
 
 function batal = updateTuneProgress(dlg, fraksi, pesan)
