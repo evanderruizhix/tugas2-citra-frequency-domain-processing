@@ -21,7 +21,7 @@ function [best, riwayat] = tunePassFilter(img, ref, method, shape, epochs, nStar
 %   riwayat - semua kandidat yang dicoba, tiap baris [diameter, n, mse, psnr]
 %
 % Butterworth: diameter dan n dicari bergantian (2 putaran), n dibatasi
-% di 1..2.5. Diameter memakai koordinat spektrum ter-pad 2x, sama dengan
+% di 0.5..2.5. Diameter memakai koordinat spektrum ter-pad 2x, sama dengan
 % applyFrequencyFilter.m, jadi PSNR di sini sama dengan PSNR setelah
 % filter benar-benar diterapkan.
 
@@ -33,7 +33,7 @@ if ~isequal(size(img), size(ref))
         'Ukuran/jumlah kanal citra dan referensi harus sama untuk tuning.');
 end
 
-N_RANGE = [1 2.5];      % batas orde Butterworth
+N_RANGE = [0.5 2.5];      % batas orde Butterworth
 
 isLowPass = strcmpi(method, 'lowpass');
 isButter  = strcmpi(shape, 'butterworth');

@@ -211,10 +211,10 @@ app.PassDiameter = uispinner(g, 'Value', 120, 'Limits', [1 Inf], 'Step', 5, ...
 app.PassDiameter.ValueChangedFcn = @(~, ~) refreshFilterPreview(app);
 
 uilabel(g, 'Text', 'Orde n');
-% batas input hanya dari rumus (n > 0); rentang 1..2.5 cuma dipakai Tune
+% batas input hanya dari rumus (n > 0); rentang 0.5..2.5 cuma dipakai Tune
 app.PassOrder = uispinner(g, 'Value', 2, 'Limits', [0 Inf], ...
     'LowerLimitInclusive', 'off', 'Step', 0.1, ...
-    'Tooltip', 'Orde Butterworth (n > 0): makin besar makin tajam (mendekati ideal). Tune mencari di rentang 1 sampai 2.5.');
+    'Tooltip', 'Orde Butterworth (n > 0): makin besar makin tajam (mendekati ideal). Tune mencari di rentang 0.5 sampai 2.5.');
 app.PassOrder.ValueChangedFcn = @(~, ~) refreshFilterPreview(app);
 
 % --- tuning otomatis terhadap citra referensi --------------------------------
